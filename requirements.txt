@@ -1,0 +1,7 @@
+apscheduler==3.10.4
+plyer==2.1.0
+pystray==0.19.5
+pillow==10.4.0
+tzdata==2024.1
+python-dateutil==2.9.0.post0
+watchdog==4.0.1
