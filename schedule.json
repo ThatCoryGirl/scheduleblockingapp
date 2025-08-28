@@ -1,0 +1,16 @@
+{
+  "active_schedule": "weekday",
+  "schedules": {
+    "weekday": [
+      { "time": "08:30", "label": "Catch-up", "category": "admin" },
+      { "time": "09:00", "label": "Kount Queue / Vector", "category": "focus" },
+      { "time": "12:00", "label": "Lunch", "category": "break" },
+      { "time": "12:30", "label": "Kount Queue / Vector", "category": "focus" },
+      { "time": "15:00", "label": "Break", "category": "break" },
+      { "time": "15:15", "label": "Mentorship / ERG Comms", "category": "collab" },
+      { "time": "16:00", "label": "Break", "category": "break" },
+      { "time": "16:15", "label": "Wrap-up", "category": "admin" },
+      { "time": "17:30", "label": "Done for the day", "category": "off" }
+    ]
+  }
+}
