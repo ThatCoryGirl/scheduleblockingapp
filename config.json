@@ -1,0 +1,15 @@
+config.json
+{
+"timezone": "America/Chicago",
+"notify_seconds_before": 10,
+"show_notifications": true,
+"compact_window": true,
+"window": { "x": 20, "y": 20 },
+"category_colors": {
+"focus": "#3b82f6",
+"collab": "#06b6d4",
+"admin": "#8b5cf6",
+"break": "#22c55e",
+"off": "#6b7280"
+}
+}
