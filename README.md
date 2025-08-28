@@ -5,23 +5,23 @@ Repo Layout
 
 ├── app
 
-│   ├── main.py
+│     ├── main.py
 
-│   ├── schedule.json          # Your daily blocks
+│     ├── schedule.json          # Your daily blocks
 
-│   ├── config.json            # Category colors + options
+│     ├── config.json            # Category colors + options
 
-│   └── providers
+│     └── providers
 
-│       ├── __init__.py
+│           ├── __init__.py
 
-│       ├── base.py            # Common provider interface
+│           ├── base.py            # Common provider interface
 
-│       ├── google_calendar.py # stub
+│           ├── google_calendar.py # stub
 
-│       ├── slack.py           # stub
+│           ├── slack.py           # stub
 
-│       └── hubstaff.py        # stub
+│           └── hubstaff.py        # stub
 
 ├── requirements.txt
 
