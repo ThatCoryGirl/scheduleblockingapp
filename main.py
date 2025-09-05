@@ -5,8 +5,13 @@ import tkinter as tk
 from PIL import Image, ImageDraw
 import pystray
 
-SCHEDULE_PATH = None  # <-- replace with your actual schedule path
+# Configuration
+SCHEDULE_PATH = Path(__file__).with_name("schedule.json")  # e.g., ./schedule.json
+DEFAULT_COLOR = "#3b82f6"  # Tailwind blue-500
+WINDOW_W = 200
+WINDOW_H = 120
 
+# Application
 class App:
     def __init__(self):
         self.tk_root = tk.Tk()
