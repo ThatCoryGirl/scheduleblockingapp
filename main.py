@@ -187,105 +187,106 @@ class App:
         else:
             self.scheduler.remove_all_jobs()
 
-    # ---------- Schedule loading & parsing ----------
+        # ---------- Schedule loading & parsing ----------
     def parse_blocks(self):
         """
         Reads schedule.json in the 'profile' format:
-        {
+          {
             "active_schedule": "weekday",
             "schedules": {
-            "weekday": [
+              "weekday": [
                 {"time":"08:30","label":"...","category":"..."},
                 ...
-            ]
+              ]
+            }
           }
-        }
 
         Expands it into a list of concrete blocks:
-        {
+          {
             "title": str,
             "start": "HH:MM",
             "end":   "HH:MM",
             "start_time": time(),
             "end_time":   time(),
             "color": "#RRGGBB" or None
-        }
+          }
         """
-    try:
-        raw = SCHEDULE_PATH.read_text(encoding="utf-8")
-        root = json.loads(raw)
+        try:
+            raw = SCHEDULE_PATH.read_text(encoding="utf-8")
+            root = json.loads(raw)
 
-        # Validate top-level structure
-        if not isinstance(root, dict):
-            raise ValueError("Top-level JSON must be an object.")
+            # Validate top-level structure
+            if not isinstance(root, dict):
+                raise ValueError("Top-level JSON must be an object.")
 
-        active_name = root.get("active_schedule")
-        schedules = root.get("schedules")
-        if not active_name or not isinstance(schedules, dict):
-            raise ValueError("Expected keys: 'active_schedule' (str) and 'schedules' (object).")
+            active_name = root.get("active_schedule")
+            schedules = root.get("schedules")
+            if not active_name or not isinstance(schedules, dict):
+                raise ValueError("Expected keys: 'active_schedule' (str) and 'schedules' (object).")
 
-        entries = schedules.get(active_name)
-        if not isinstance(entries, list) or not entries:
-            raise ValueError(f"Schedule '{active_name}' must be a non-empty list.")
+            entries = schedules.get(active_name)
+            if not isinstance(entries, list) or not entries:
+                raise ValueError(f"Schedule '{active_name}' must be a non-empty list.")
 
-        # Normalize & sort by time
-        norm = []
-        for idx, e in enumerate(entries):
-            if not isinstance(e, dict):
-                raise ValueError(f"Entry #{idx+1} is not an object.")
-            t = e.get("time")
-            if not t or not isinstance(t, str) or ":" not in t:
-                raise ValueError(f"Entry #{idx+1} missing/invalid 'time' (HH:MM).")
-            label = e.get("label", "Untitled")
-            category = e.get("category")
-            color = e.get("color")  # optional per-entry color override
-            norm.append({"time": t, "label": label, "category": category, "color": color})
+            # Normalize & sort by time
+            norm = []
+            for idx, e in enumerate(entries):
+                if not isinstance(e, dict):
+                    raise ValueError(f"Entry #{idx+1} is not an object.")
+                t = e.get("time")
+                if not t or not isinstance(t, str) or ":" not in t:
+                    raise ValueError(f"Entry #{idx+1} missing/invalid 'time' (HH:MM).")
+                label = e.get("label", "Untitled")
+                category = e.get("category")
+                color = e.get("color")  # optional per-entry color override
+                norm.append({"time": t, "label": label, "category": category, "color": color})
 
-        # Sort by HH:MM
-        def _hm_key(s): 
-            hh, mm = [int(x) for x in s.split(":")]
-            return hh * 60 + mm
-        norm.sort(key=lambda x: _hm_key(x["time"]))
+            # Sort by HH:MM
+            def _hm_key(s):
+                hh, mm = [int(x) for x in s.split(":")]
+                return hh * 60 + mm
+            norm.sort(key=lambda x: _hm_key(x["time"]))
 
-        # Expand to blocks: each start = this entry.time, end = next entry.time (last to 23:59)
-        base_now = datetime.now(self.tz)
-        blocks = []
-        for i, cur in enumerate(norm):
-            nxt = norm[i + 1] if i + 1 < len(norm) else None
-            start = cur["time"]
-            end = nxt["time"] if nxt else "23:59"
+            # Expand to blocks: each start = this entry.time, end = next entry.time (last to 23:59)
+            base_now = datetime.now(self.tz)
+            blocks = []
+            for i, cur in enumerate(norm):
+                nxt = norm[i + 1] if i + 1 < len(norm) else None
+                start = cur["time"]
+                end = nxt["time"] if nxt else "23:59"
 
-            # Parse to time() objects for fast comparisons
-            sh, sm = [int(x) for x in start.split(":")]
-            eh, em = [int(x) for x in end.split(":")]
-            start_t = base_now.replace(hour=sh, minute=sm, second=0, microsecond=0).time()
-            end_t   = base_now.replace(hour=eh, minute=em, second=0, microsecond=0).time()
+                # Parse to time() objects for fast comparisons
+                sh, sm = [int(x) for x in start.split(":")]
+                eh, em = [int(x) for x in end.split(":")]
+                start_t = base_now.replace(hour=sh, minute=sm, second=0, microsecond=0).time()
+                end_t   = base_now.replace(hour=eh, minute=em, second=0, microsecond=0).time()
 
-            # Choose color: explicit > category map > default
-            c = cur.get("color")
-            if not c and cur.get("category"):
-                c = CAT_COLORS.get(cur["category"])
-            c = c or DEFAULT_COLOR
+                # Choose color: explicit > category map > default
+                c = cur.get("color")
+                if not c and cur.get("category"):
+                    c = CAT_COLORS.get(cur["category"])
+                c = c or DEFAULT_COLOR
 
-            blocks.append({
-                "title": cur["label"],
-                "start": start,
-                "end": end,
-                "start_time": start_t,
-                "end_time": end_t,
-                "color": c
-            })
+                blocks.append({
+                    "title": cur["label"],
+                    "start": start,
+                    "end": end,
+                    "start_time": start_t,
+                    "end_time": end_t,
+                    "color": c
+                })
 
-        # Keep chronological (already sorted, but be explicit)
-        blocks.sort(key=lambda b: b["start_time"])
-        return blocks
+            # Keep chronological (already sorted, but be explicit)
+            blocks.sort(key=lambda b: b["start_time"])
+            return blocks
 
-    except FileNotFoundError:
-        print(f"[warn] No schedule file found at {SCHEDULE_PATH}. Using empty schedule.")
-        return []
-    except Exception as e:
-        print(f"[error] Failed to parse schedule: {e}")
-        return []
+        except FileNotFoundError:
+            print(f"[warn] No schedule file found at {SCHEDULE_PATH}. Using empty schedule.")
+            return []
+        except Exception as e:
+            print(f"[error] Failed to parse schedule: {e}")
+            return []
+
 
 
     # ---------- Notifications ----------
