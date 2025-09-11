@@ -32,6 +32,15 @@ DEFAULT_COLOR = "#3b82f6"  # Tailwind blue-500
 WINDOW_W = 200
 WINDOW_H = 120
 
+# Category colors (fallbacks if a block has no explicit "color" in JSON)
+CAT_COLORS = {
+    "focus":  "#3b82f6",  # blue
+    "admin":  "#22c55e",  # green
+    "break":  "#06b6d4",  # cyan
+    "collab": "#f59e0b",  # amber
+    "off":    "#64748b",  # slate
+}
+
 # ---------- App ----------
 class App:
     def __init__(self):
