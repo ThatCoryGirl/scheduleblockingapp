@@ -1,11 +1,16 @@
 # main.py
 
 # --- Standard library imports ---
+import os                    # Read environment variables (TASKSWITCHER_TZ override)
 import json                  # Read/parse the schedule.json file
 import threading             # Run background tasks (tray + file watcher) without blocking the UI
 import time                  # Sleep in the file watcher loop
 from pathlib import Path     # Build paths relative to this file
 from datetime import datetime, timedelta  # Handle dates/times for scheduling
+from zoneinfo import ZoneInfo             # IANA timezone support (Python 3.9+)
+
+# --- Local timezone detection / override ---
+from tzlocal import get_localzone_name    # Detect the machine's IANA timezone name
 
 # --- Third-party / GUI imports ---
 import tkinter as tk                     # Tkinter GUI for the floating color window
@@ -13,9 +18,12 @@ from PIL import Image, ImageDraw         # Build an in-memory tray icon image
 import pystray                           # System tray icon + menu
 from plyer import notification           # Cross-platform notifications (Windows toast on Win10+)
 from apscheduler.schedulers.background import BackgroundScheduler  # Scheduler for timed jobs
-from dateutil import tz                  # Local timezone awareness (DST-safe)
 
 # ---------- Config ----------
+# Single source of truth for the app’s timezone (override with env var if needed).
+TZ_NAME = os.environ.get("TASKSWITCHER_TZ", get_localzone_name())
+APP_TZ = ZoneInfo(TZ_NAME)
+
 # Path to the daily schedule file. Lives next to main.py (e.g., ./schedule.json).
 SCHEDULE_PATH = Path(__file__).with_name("schedule.json")
 # Default color if no current block matches, or a block has no color set.
@@ -34,8 +42,8 @@ class App:
         - file mtime for hot-reload, and the background scheduler
         - Tkinter window + canvas bindings
         """
-        # Local timezone (handles DST/offset correctly for scheduling)
-        self.tz = tz.tzlocal()
+        # Unified app timezone (DST-safe, consistent everywhere)
+        self.tz = APP_TZ
 
         # In-memory state for today's blocks and current UI color
         self.blocks = []
@@ -48,8 +56,9 @@ class App:
         self.reload_lock = threading.Lock()
         self.last_schedule_mtime = 0
 
-        # Background job scheduler (runs alongside Tk mainloop)
-        self.scheduler = BackgroundScheduler(timezone=self.tz)
+        # Background job scheduler (runs alongside Tk mainloop).
+        # IMPORTANT: pass the timezone NAME to avoid dateutil tzlocal bug paths.
+        self.scheduler = BackgroundScheduler(timezone=TZ_NAME)
         self.scheduler.start()
 
         # Lightweight config object for window position + compact toggle
@@ -188,8 +197,9 @@ class App:
                 eh, em = [int(x) for x in end.split(":")]
 
                 # Bake into today's wall-clock time (timezone-aware, no date comparison here)
-                start_t = datetime.now(self.tz).replace(hour=sh, minute=sm, second=0, microsecond=0).time()
-                end_t = datetime.now(self.tz).replace(hour=eh, minute=em, second=0, microsecond=0).time()
+                base_now = datetime.now(self.tz)
+                start_t = base_now.replace(hour=sh, minute=sm, second=0, microsecond=0).time()
+                end_t = base_now.replace(hour=eh, minute=em, second=0, microsecond=0).time()
 
                 # Append normalized block (note: if end < start, it conceptually wraps midnight)
                 blocks.append({
@@ -346,6 +356,7 @@ class App:
 
 # Only run the app when this file is executed directly (not on import)
 if __name__ == "__main__":
+    # Optional: quick visibility of the effective timezone at startup
+    print(f"[tz] Using timezone: {TZ_NAME}")
     App().run()
-
 
