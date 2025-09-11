@@ -209,10 +209,12 @@ class App:
 
                 # Only show tiny start labels when not compact (more room)
                 if not self.config.compact_window and (y1 - y0) >= 14:
+                    # Format start time as 12-hour AM/PM
+                    lbl = blk["start_time"].strftime("%I:%M %p").lstrip("0")
                     self.canvas.create_text(x0 + 4, y0 + 2,
-                                            text=blk["start"],
-                                            font=("Segoe UI", 7),
-                                            anchor="nw", fill="#0f172a")
+                                        text=lbl,
+                                        font=("Segoe UI", 7),
+                                        anchor="nw", fill="#0f172a")
 
             # Outline today's column
             if i == today_idx:
