@@ -125,6 +125,14 @@ class App:
         self.tk_root.geometry(f"+{x}+{y}")
         self._drag_offset = (event.x_root, event.y_root)
 
+    @staticmethod
+    def _time_in_range(start_t, end_t, now_t):
+        """True if now_t ∈ [start_t, end_t) with wrap-around support."""
+        if start_t <= end_t:
+            return start_t <= now_t < end_t
+        # wraps midnight (e.g., 22:00 → 01:00)
+        return now_t >= start_t or now_t < end_t
+
     def _tick_ui(self):
         """
         Every second:
