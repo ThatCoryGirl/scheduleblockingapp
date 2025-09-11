@@ -188,29 +188,29 @@ class App:
             self.scheduler.remove_all_jobs()
 
     # ---------- Schedule loading & parsing ----------
-def parse_blocks(self):
-    """
-    Reads schedule.json in the 'profile' format:
-      {
-        "active_schedule": "weekday",
-        "schedules": {
-          "weekday": [
-            {"time":"08:30","label":"...","category":"..."},
-            ...
-          ]
+    def parse_blocks(self):
+        """
+        Reads schedule.json in the 'profile' format:
+        {
+            "active_schedule": "weekday",
+            "schedules": {
+            "weekday": [
+                {"time":"08:30","label":"...","category":"..."},
+                ...
+            ]
+          }
         }
-      }
 
-    Expands it into a list of concrete blocks:
-      {
-        "title": str,
-        "start": "HH:MM",
-        "end":   "HH:MM",
-        "start_time": time(),
-        "end_time":   time(),
-        "color": "#RRGGBB" or None
-      }
-    """
+        Expands it into a list of concrete blocks:
+        {
+            "title": str,
+            "start": "HH:MM",
+            "end":   "HH:MM",
+            "start_time": time(),
+            "end_time":   time(),
+            "color": "#RRGGBB" or None
+        }
+        """
     try:
         raw = SCHEDULE_PATH.read_text(encoding="utf-8")
         root = json.loads(raw)
