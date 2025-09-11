@@ -1,6 +1,5 @@
 config.json
 {
-"timezone": "America/Chicago",
 "notify_seconds_before": 10,
 "show_notifications": true,
 "compact_window": true,
