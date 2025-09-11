@@ -347,6 +347,7 @@ class App:
 
         # Tray menu: Pause/Resume, manual reload, and Quit
         menu = pystray.Menu(
+            pystray.MenuItem("Open Schedule", self._open_schedule_panel),
             pystray.MenuItem("Pause/Resume", self.toggle_pause, default=False),
             pystray.MenuItem("Reload schedule", self.force_reload),
             pystray.MenuItem("Quit", self.quit)
