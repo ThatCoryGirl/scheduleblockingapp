@@ -42,6 +42,32 @@ CAT_COLORS = {
 }
 
 # ---------- App ----------
+class CollapsibleSection(tk.Frame):
+    """A simple accordion-like section with a clickable header."""
+    def __init__(self, master, title: str, *, opened=False):
+        super().__init__(master)
+        self._opened = opened
+        self.header = tk.Frame(self)
+        self.header.pack(fill="x")
+
+        self.btn = tk.Button(
+            self.header, text=("▼ " if opened else "► ") + title,
+            bd=0, anchor="w", command=self.toggle
+        )
+        self.btn.pack(side="left", fill="x", expand=True)
+
+        self.body = tk.Frame(self)
+        if opened:
+            self.body.pack(fill="x")
+
+    def toggle(self):
+        self._opened = not self._opened
+        self.btn.config(text=("▼ " if self._opened else "► ") + self.btn.cget("text")[2:])
+        if self._opened:
+            self.body.pack(fill="x")
+        else:
+            self.body.forget()
+
 class App:
     def __init__(self):
         """
@@ -283,7 +309,7 @@ class App:
             print(f"[schedule] Loaded {len(blocks)} blocks for '{active_name}'")
             for b in blocks:
                 print(f"  {b['start']}–{b['end']} → {b['title']} ({b['color']})")
-                
+
             return blocks
 
         except FileNotFoundError:
