@@ -142,7 +142,7 @@ class App:
         """
         now = datetime.now(self.tz).time()
         for b in self.blocks:
-            if b["start_time"] <= now < b["end_time"]:
+            if self._time_in_range(b["start_time"], b["end_time"], now):
                 self.active_color = b.get("color") or DEFAULT_COLOR
                 break
         else:
