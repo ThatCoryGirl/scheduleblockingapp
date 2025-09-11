@@ -278,6 +278,12 @@ class App:
 
             # Keep chronological (already sorted, but be explicit)
             blocks.sort(key=lambda b: b["start_time"])
+
+            # --- Debug prints ---
+            print(f"[schedule] Loaded {len(blocks)} blocks for '{active_name}'")
+            for b in blocks:
+                print(f"  {b['start']}–{b['end']} → {b['title']} ({b['color']})")
+                
             return blocks
 
         except FileNotFoundError:
