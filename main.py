@@ -179,6 +179,161 @@ class App:
         # Schedule the next tick in ~1 second
         self.tk_root.after(1_000, self._tick_ui)
 
+    def _open_schedule_panel(self, _=None):
+        """Open a toplevel window showing a collapsible 7-day view."""
+        # If already open, bring to front
+        if hasattr(self, "_sched_win") and self._sched_win and tk.Toplevel.winfo_exists(self._sched_win):
+            self._sched_win.deiconify()
+            self._sched_win.lift()
+            return
+
+        self._sched_win = tk.Toplevel(self.tk_root)
+        self._sched_win.title("Task Switcher – Week View")
+        self._sched_win.geometry("380x520")
+
+        # Scrollable canvas
+        container = tk.Frame(self._sched_win)
+        container.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(container, highlightthickness=0)
+        vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+
+        vsb.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        body = tk.Frame(canvas)
+        canvas.create_window((0, 0), window=body, anchor="nw")
+
+        body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        self._sched_win.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+
+        # Build 7 sections (Mon..Sun), expand today's by default
+        today = datetime.now(self.tz).date()
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
+        days = [start_of_week + timedelta(days=i) for i in range(7)]
+        today_idx = (today - start_of_week).days
+
+        # Materialize per-day blocks (re-using your JSON + fallbacks)
+        week_blocks = self._blocks_for_week(days)
+
+        for i, d in enumerate(days):
+            title = d.strftime("%A  %b %d")
+            section = CollapsibleSection(body, title, opened=(i == today_idx))
+            section.pack(fill="x", padx=8, pady=(8 if i == 0 else 4))
+
+            # Render rows for that day
+            for blk in week_blocks[i]:
+                self._render_block_row(section.body, blk)
+
+        # Footer hint
+        hint = tk.Label(body, text="Tip: Right-click tray → Reload schedule to rescan JSON.", fg="#64748b")
+        hint.pack(padx=8, pady=12, anchor="w")
+
+    def _render_block_row(self, parent, blk):
+        """Row with time range, color swatch, and title."""
+        row = tk.Frame(parent)
+        row.pack(fill="x", padx=6, pady=3)
+
+        # Color swatch
+        sw = tk.Canvas(row, width=14, height=14, highlightthickness=0)
+        sw.create_rectangle(0, 0, 14, 14, outline="", fill=blk["color"])
+        sw.pack(side="left", padx=(2, 8))
+
+        # Time label
+        t_lbl = tk.Label(row, width=13, anchor="w", text=f"{blk['start']}–{blk['end']}")
+        t_lbl.pack(side="left")
+
+        # Title
+        ttl = tk.Label(row, anchor="w", text=blk["title"])
+        ttl.pack(side="left", fill="x", expand=True)
+
+        # Emphasize current block (today only)
+        now = datetime.now(self.tz)
+        if blk.get("_is_today") and self._time_in_range(blk["start_time"], blk["end_time"], now.time()):
+            ttl.config(font=("Segoe UI", 10, "bold"))
+
+    def _blocks_for_week(self, days):
+        """
+        Produce 7 lists of blocks (one per day).
+        Uses the currently active profile semantics:
+         - If your JSON only has 'weekday': apply it to Mon–Fri; weekend uses 'off' filler.
+         - If your JSON also includes 'weekend' or explicit day names ('monday', 'tuesday', ...),
+           those take precedence.
+        """
+        # Re-parse raw entries once
+        try:
+            data = json.loads(SCHEDULE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            data = {"active_schedule": "weekday", "schedules": {"weekday": []}}
+
+        schedules = data.get("schedules", {})
+        # Normalize keys to lowercase for convenience
+        norm_keys = {k.lower(): k for k in schedules.keys()}
+
+        def entries_for_date(d):
+            wkday = d.strftime("%A").lower()   # 'monday'..'sunday'
+            # precedence: explicit day -> weekend/weekday -> active
+            if wkday in norm_keys:
+                return schedules[norm_keys[wkday]]
+            if d.weekday() >= 5 and "weekend" in norm_keys:
+                return schedules[norm_keys["weekend"]]
+            if d.weekday() < 5 and "weekday" in norm_keys:
+                return schedules[norm_keys["weekday"]]
+            # fallback to active profile list (what you already use)
+            active = data.get("active_schedule")
+            if isinstance(active, str) and active in schedules:
+                return schedules[active]
+            return []
+
+        # Use your parse logic to build concrete blocks per day
+        week_lists = []
+        for d in days:
+            raw_entries = entries_for_date(d)
+            # — same steps you do in parse_blocks() —
+            # sort by time
+            items = []
+            for e in raw_entries:
+                t = e.get("time")
+                if not (isinstance(t, str) and ":" in t):
+                    continue
+                items.append({
+                    "time": t,
+                    "label": e.get("label", "Untitled"),
+                    "category": e.get("category"),
+                    "color": e.get("color")
+                })
+
+            def _hm_key(s): 
+                hh, mm = [int(x) for x in s.split(":")]
+                return hh * 60 + mm
+
+            items.sort(key=lambda x: _hm_key(x["time"]))
+            # expand into ranges
+            blocks = []
+            base = datetime(d.year, d.month, d.day, tzinfo=self.tz)
+            for i, cur in enumerate(items):
+                nxt = items[i + 1]["time"] if i + 1 < len(items) else "23:59"
+                sh, sm = [int(x) for x in cur["time"].split(":")]
+                eh, em = [int(x) for x in nxt.split(":")]
+                start_t = base.replace(hour=sh, minute=sm, second=0, microsecond=0).time()
+                end_t   = base.replace(hour=eh, minute=em, second=0, microsecond=0).time()
+                c = cur.get("color")
+                if not c and cur.get("category"):
+                    c = CAT_COLORS.get(cur["category"])
+                c = c or DEFAULT_COLOR
+                blocks.append({
+                    "title": cur["label"],
+                    "start": cur["time"],
+                    "end": nxt,
+                    "start_time": start_t,
+                    "end_time": end_t,
+                    "color": c,
+                    "_is_today": (d == datetime.now(self.tz).date()),
+                })
+            week_lists.append(blocks)
+        return week_lists
+
     # ---------- Tray ----------
     def make_tray_icon(self):
         """
