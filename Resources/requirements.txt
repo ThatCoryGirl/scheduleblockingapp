@@ -1,12 +1,12 @@
 Package         Version
 --------------- -----------
-APScheduler     3.11.0
-pillow          11.3.0
-pip             24.3.1
-plyer           2.1.0
-pystray         0.19.5
-python-dateutil 2.9.0.post0
-six             1.17.0
-tzdata          2025.2
-tzlocal         5.3.1
-watchdog        6.0.0
+apscheduler==3.10.4
+pillow==10.4.0
+pip==25.2
+plyer==2.1.0
+pystray==0.19.5
+python-dateutil==2.8.2
+six==1.16.0
+tzdata==2024.1
+tzlocal==5.2
+watchdog==4.0.1
