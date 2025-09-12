@@ -272,6 +272,14 @@ class App:
         # Schedule the next tick in ~1 second
         self.tk_root.after(1_000, self._tick_ui)
 
+    def _on_canvas_resize(self, event):
+        """Redraw the window when the canvas changes size (e.g. window resize)."""
+        # debounce rapid resize events
+        if hasattr(self, "_resize_job") and self._resize_job:
+            self.tk_root.after_cancel(self._resize_job)
+        self._resize_job = self.tk_root.after(50, self.draw_window)
+
+
     def _open_schedule_panel(self, _=None):
         """Open a toplevel window showing a collapsible 7-day view."""
         # If already open, bring to front
