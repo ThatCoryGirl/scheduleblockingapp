@@ -107,7 +107,7 @@ class App:
 
         # Canvas is the colored rectangle "status light"
         self.canvas = tk.Canvas(self.tk_root, width=WINDOW_W, height=WINDOW_H, highlightthickness=0)
-        self.canvas.pack(padx=10, pady=6)
+        self.canvas.pack(fill="both", expand=True)  # <— key
 
         # Bindings:
         # - Double click toggles compact/normal size
