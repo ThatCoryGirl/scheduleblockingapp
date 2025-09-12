@@ -109,6 +109,9 @@ class App:
         self.canvas = tk.Canvas(self.tk_root, width=WINDOW_W, height=WINDOW_H, highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)  # <— key
 
+        # Bind canvas resize → redraw
+        self.canvas.bind("<Configure>", self._on_canvas_resize)
+
         # Bindings:
         # - Double click toggles compact/normal size
         # - Click + drag moves the window around
