@@ -223,7 +223,7 @@ class App:
             if i == today_idx:
                 self.canvas.create_rectangle(x0, grid_top, x1, grid_bot,
                                             outline="#0ea5e9", width=2)  # cyan-500
-
+    
     def toggle_compact(self, _evt=None):
         """
         Toggle between compact and full window sizes.
@@ -281,7 +281,6 @@ class App:
         if hasattr(self, "_resize_job") and self._resize_job:
             self.tk_root.after_cancel(self._resize_job)
         self._resize_job = self.tk_root.after(50, self.draw_window)
-
 
     def _open_schedule_panel(self, _=None):
         """Open a toplevel window showing a collapsible 7-day view."""
@@ -437,6 +436,49 @@ class App:
                 })
             week_lists.append(blocks)
         return week_lists
+    
+    # --- Legend helpers ---
+    def _legend_pairs(self):
+        """
+        Map display labels → colors for the legend.
+        Starts with CAT_COLORS and keeps the same label text you use in JSON.
+        """
+        # base: category color map
+        pairs = [(name.capitalize(), col) for name, col in CAT_COLORS.items()]
+
+        # If any current blocks use a color with no category, add a generic tag once.
+        known = {c.lower() for c in CAT_COLORS.values()}
+        extra_seen = set()
+        for b in self.blocks:
+            col = (b.get("color") or "").lower()
+            if col and col not in known and col not in extra_seen and not b.get("category"):
+                pairs.append(("Custom", b["color"]))
+                extra_seen.add(col)
+
+        return pairs
+
+    def _draw_legend(self, y_top: int, w: int, left_pad: int, right_pad: int, row_h: int = 16, sw: int = 12):
+        """
+        Draw a single-row legend of evenly spaced items at vertical position y_top.
+        Each item: [■] Label
+        """
+        items = self._legend_pairs()
+        if not items:
+            return
+
+        n = len(items)
+        seg_w = max(60, (w - left_pad - right_pad) // n)
+
+        for i, (label, color) in enumerate(items):
+            x_left = left_pad + i * seg_w
+            # swatch
+            self.canvas.create_rectangle(x_left, y_top + (row_h - sw)//2,
+                                         x_left + sw, y_top + (row_h - sw)//2 + sw,
+                                         outline="#cbd5e1", fill=color)
+            # label
+            self.canvas.create_text(x_left + sw + 6, y_top + row_h // 2,
+                                    text=label, anchor="w",
+                                    font=("Segoe UI", 8), fill="#334155")
 
     # ---------- Tray ----------
     def make_tray_icon(self):
