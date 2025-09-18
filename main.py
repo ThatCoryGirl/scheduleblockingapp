@@ -744,6 +744,33 @@ class App:
         # Marshal to Tk thread
         self.tk_root.after(0, self._show_toast_ui, title, body, block)
 
+    def _show_toast_ui(self, title: str, body: str, block: dict):
+        """
+        Create the sticky toast window. Buttons:
+            - Dismiss: just closes
+            - Snooze 5 min: schedules the same notification 5 minutes later
+        """
+        def on_dismiss():
+            # no-op, but you could log or mark 'acknowledged' here
+            pass
+
+        def on_snooze():
+            try:
+                # Re-schedule a one-shot job 5 minutes later with same block
+                run_at = datetime.now(self.tz) + timedelta(minutes=5)
+                self.scheduler.add_job(
+                    self._notify_block,
+                    "date",
+                    run_date=run_at,
+                    args=[block],
+                    id=f"snooze:{block.get('title','Task')}:{run_at.isoformat()}",
+                    misfire_grace_time=60
+                )
+            except Exception as e:
+                print(f"[warn] Snooze scheduling failed: {e}")
+
+    StickyToast(self.tk_root, title, body, on_dismiss=on_dismiss, on_snooze=on_snooze)
+
     # ---------- Control ----------
     def force_reload(self, _=None):
         """
