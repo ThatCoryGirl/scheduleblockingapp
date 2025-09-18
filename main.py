@@ -582,7 +582,7 @@ class App:
         else:
             self.scheduler.remove_all_jobs()
 
-        # ---------- Schedule loading & parsing ----------
+    # ---------- Schedule loading & parsing ----------
     def parse_blocks(self):
         """
         Reads schedule.json in the 'profile' format:
@@ -731,25 +731,18 @@ class App:
 
     def _notify_block(self, block):
         """
-        Show a system notification at the start of a block.
-        If paused, do nothing.
+        Show a sticky in-app toast at the start of a block.
+        Runs from APScheduler thread; marshal UI to Tk thread.
         """
         if self.paused:
             return
 
-        title = block.get("title", "Task Switch")
-        body = f"Time to switch to: {title}"
+        # Build strings here; UI work happens in _show_toast_ui
+        title = "Task Switcher"
+        body = f"Time to switch to: {block.get('title', 'Task')}"
 
-        try:
-            notification.notify(
-                title="Task Switcher",
-                message=body,
-                timeout=8,         # seconds to display (platform-dependent)
-                app_name="Task Switcher"
-            )
-        except Exception as e:
-            # Notifications can fail on some environments; don't crash the app
-            print(f"[warn] Notification failed: {e}")
+        # Marshal to Tk thread
+        self.tk_root.after(0, self._show_toast_ui, title, body, block)
 
     # ---------- Control ----------
     def force_reload(self, _=None):
