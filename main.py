@@ -143,6 +143,7 @@ class App:
             h = max(70,  self.tk_root.winfo_height())
         except Exception:
             w, h = WINDOW_W, WINDOW_H
+            legend_h = 18 if not self.config.compact_window else 16
 
         # Background
         self.canvas.create_rectangle(0, 0, w, h, fill="#e5e7eb", outline="")  # slate-200
