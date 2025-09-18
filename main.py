@@ -41,6 +41,72 @@ CAT_COLORS = {
     "off":    "#64748b",  # slate
 }
 
+class StickyToast:
+    """
+    Tiny always-on-top window anchored bottom-right.
+    Stays until a button is pressed.
+    """
+    def __init__(self, root: tk.Tk, title: str, body: str, on_dismiss=None, on_snooze=None):
+        self.root = root
+        self.on_dismiss = on_dismiss
+        self.on_snooze = on_snooze
+
+        self.win = tk.Toplevel(root)
+        self.win.overrideredirect(True)        # no title bar
+        self.win.attributes("-topmost", True)  # stay on top
+        self.win.configure(bg="#0b1220")       # dark backdrop
+
+        # Content frame
+        frame = tk.Frame(self.win, bg="#0b1220")
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Title + body
+        tk.Label(frame, text=title, fg="white", bg="#0b1220",
+                 font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        tk.Label(frame, text=body, fg="#e5e7eb", bg="#0b1220",
+                 font=("Segoe UI", 9), wraplength=260, justify="left").pack(anchor="w", pady=(4, 8))
+
+        # Buttons
+        btn_row = tk.Frame(frame, bg="#0b1220")
+        btn_row.pack(fill="x", pady=(2, 0))
+
+        snooze = tk.Button(btn_row, text="Snooze 5 min", relief="flat",
+                           command=self._snooze, bg="#1f2937", fg="white", activebackground="#334155")
+        snooze.pack(side="left", padx=(0, 6))
+
+        dism = tk.Button(btn_row, text="Dismiss", relief="flat",
+                         command=self._dismiss, bg="#1f2937", fg="white", activebackground="#334155")
+        dism.pack(side="left")
+
+        # Size and position (bottom-right of current screen)
+        self.win.update_idletasks()
+        w, h = self.win.winfo_width(), self.win.winfo_height()
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        x = sw - w - 20
+        y = sh - h - 50
+        self.win.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Basic shadow-ish border
+        self.win.configure(highlightthickness=1, highlightbackground="#334155")
+
+        # Close with ESC or click-out (optional)
+        self.win.bind("<Escape>", lambda e: self._dismiss())
+
+    def _dismiss(self):
+        try:
+            if callable(self.on_dismiss):
+                self.on_dismiss()
+        finally:
+            self.win.destroy()
+
+    def _snooze(self):
+        try:
+            if callable(self.on_snooze):
+                self.on_snooze()
+        finally:
+            self.win.destroy()
+
 # ---------- App ----------
 class CollapsibleSection(tk.Frame):
     """A simple accordion-like section with a clickable header."""
