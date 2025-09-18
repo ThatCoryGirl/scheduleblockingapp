@@ -741,34 +741,55 @@ class App:
         - If it already passed, schedule it for tomorrow.
         Also, schedule a self-refresh at 00:05 to seed the next day's jobs.
         """
-        # Remove any previous jobs so we don't duplicate notifications
+        # --- Master switch: turn all notifications on/off from config ---
+        if not getattr(self.config, "show_notifications", True):
+            # If notifications are disabled, remove any existing jobs and exit
+            self.scheduler.remove_all_jobs()
+            return
+
+        # --- Reset jobs to avoid duplicates ---
+        # Always clear out old jobs before re-adding them fresh
         self.scheduler.remove_all_jobs()
 
-        now = datetime.now(self.tz)
-        today = now.date()
-        tomorrow = today + timedelta(days=1)
+        # --- Establish reference times ---
+        now = datetime.now(self.tz)           # current time (timezone-aware)
+        today = now.date()                    # today's calendar date
+        tomorrow = today + timedelta(days=1)  # tomorrow's calendar date
+        lead = max(0, int(getattr(self.config, "notify_seconds_before", 0)))  
+        # lead time = seconds before start; enforce non-negative
 
-        # Helper: build a timezone-aware datetime (today or tomorrow) for a given "HH:MM"
+        # --- Helper to create a datetime from a date + "HH:MM" string ---
         def _mk_dt(date_, hhmm: str):
             hh, mm = [int(x) for x in hhmm.split(":")]
             return datetime(date_.year, date_.month, date_.day, hh, mm, tzinfo=self.tz)
 
-        # For each block, figure out whether to schedule the toast today or tomorrow
+        # --- Schedule one job per block ---
         for b in self.blocks:
+            # Scheduled start time if it were today
             dt_today = _mk_dt(today, b["start"])
-            dt_next = dt_today if dt_today >= now else _mk_dt(tomorrow, b["start"])
+            # If that start time has already passed, schedule it tomorrow
+            dt_next  = dt_today if dt_today >= now else _mk_dt(tomorrow, b["start"])
 
-            # One run per block start time
+            # Apply lead time (notify earlier if set)
+            run_at   = dt_next - timedelta(seconds=lead)
+
+            # Never schedule in the past — clamp to "now" if needed
+            if run_at < now:
+                run_at = now
+
+            # Add the job to APScheduler
             self.scheduler.add_job(
-                self._notify_block,                # function to call
-                "date",                            # run once at a specific time
-                run_date=dt_next,                  # when to run
-                args=[b],                          # pass the block to the notifier
-                id=f"block:{b['title']}:{dt_next.isoformat()}",  # unique id for safety
-                misfire_grace_time=60              # allow up to 60s late if computer wakes
+                self._notify_block,                    # function to call
+                "date",                                # run once at a specific time
+                run_date=run_at,                       # when to trigger
+                args=[b],                              # pass the block as an argument
+                id=f"block:{b['title']}:{run_at.isoformat()}",  # unique ID per job
+                misfire_grace_time=60                  # allow 60s late execution
             )
 
-        # At ~midnight, re-seed the following day's jobs (handles rolling schedule)
+        # --- Daily re-seed ---
+        # Schedule this same function to run again just after midnight
+        # Ensures the next day's jobs get queued automatically
         midnight_plus = datetime.combine(tomorrow, datetime.min.time()).replace(tzinfo=self.tz) + timedelta(minutes=5)
         self.scheduler.add_job(self.schedule_notifications, "date", run_date=midnight_plus)
 
