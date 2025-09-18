@@ -214,6 +214,10 @@ class App:
         self.tk_root = tk.Tk()
         self.tk_root.title("Task Switcher")
 
+        # If compact at start, size accordingly (width x height)
+        if self.config.compact_window:
+            self.tk_root.geometry("180x80")
+
         # Canvas is the colored rectangle "status light"
         self.canvas = tk.Canvas(self.tk_root, width=WINDOW_W, height=WINDOW_H, highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)  # <— key
