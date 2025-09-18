@@ -1,4 +1,4 @@
-config.json
+
 {
 "notify_seconds_before": 10,
 "show_notifications": true,
