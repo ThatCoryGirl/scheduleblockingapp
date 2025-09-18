@@ -200,7 +200,14 @@ class App:
 
         # Lightweight config object for window position + compact toggle
         self.config = type(
-            "Config", (), {"win_x": 100, "win_y": 100, "compact_window": False}
+            "Config", (),
+            {
+                "win_x": CFG_WIN_X,
+                "win_y": CFG_WIN_Y,
+                "compact_window": CFG_COMPACT,
+                "show_notifications": CFG_SHOW_NOTIFS,
+                "notify_seconds_before": CFG_NOTIFY_LEAD,
+            },
         )()
 
         # ----- Tkinter window setup -----
