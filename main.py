@@ -224,6 +224,10 @@ class App:
 
         # Bind canvas resize → redraw
         self.canvas.bind("<Configure>", self._on_canvas_resize)
+        self.tk_root.bind("<Double-1>", self.toggle_compact)
+        self.tk_root.bind("<B1-Motion>", self.drag)
+        self.tk_root.bind("<Button-1>", self.start_drag)
+        self.tk_root.bind("<Control-w>", self._open_schedule_panel)
 
         # Bindings:
         # - Double click toggles compact/normal size
