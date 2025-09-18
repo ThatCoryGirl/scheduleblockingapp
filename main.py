@@ -16,7 +16,7 @@ from tzlocal import get_localzone_name    # Detect the machine's IANA timezone n
 import tkinter as tk                     # Tkinter GUI for the floating color window
 from PIL import Image, ImageDraw         # Build an in-memory tray icon image
 import pystray                           # System tray icon + menu
-from plyer import notification           # Cross-platform notifications (Windows toast on Win10+)
+##from plyer import notification           # Cross-platform notifications (Windows toast on Win10+) (using a different method for notifications)
 from apscheduler.schedulers.background import BackgroundScheduler  # Scheduler for timed jobs
 
 # ---------- Config ----------
