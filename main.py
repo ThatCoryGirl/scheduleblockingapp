@@ -229,14 +229,6 @@ class App:
         self.tk_root.bind("<Button-1>", self.start_drag)
         self.tk_root.bind("<Control-w>", self._open_schedule_panel)
 
-        # Bindings:
-        # - Double click toggles compact/normal size
-        # - Click + drag moves the window around
-        self.tk_root.bind("<Double-1>", self.toggle_compact)
-        self.tk_root.bind("<B1-Motion>", self.drag)
-        self.tk_root.bind("<Button-1>", self.start_drag)
-        self.tk_root.bind("<Control-w>", self._open_schedule_panel)
-
         # Defer initial window placement slightly so Tk knows screen metrics
         self.tk_root.after(100, lambda: self.tk_root.geometry(f"+{self.config.win_x}+{self.config.win_y}"))
 
