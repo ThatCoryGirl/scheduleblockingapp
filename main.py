@@ -24,15 +24,14 @@ from apscheduler.schedulers.background import BackgroundScheduler  # Scheduler f
 TZ_NAME = os.environ.get("TASKSWITCHER_TZ", get_localzone_name())
 APP_TZ = ZoneInfo(TZ_NAME)
 
-# Path to the daily schedule file. Lives next to main.py (e.g., ./schedule.json).
+# Paths
 SCHEDULE_PATH = Path(__file__).with_name("schedule.json")
-# Default color if no current block matches, or a block has no color set.
+CONFIG_PATH   = Path(__file__).with_name("config.json")
+
+# Defaults
 DEFAULT_COLOR = "#3b82f6"  # Tailwind blue-500
-# Base window dimensions (can be toggled to compact).
 WINDOW_W = 200
 WINDOW_H = 120
-
-# Category colors (fallbacks if a block has no explicit "color" in JSON)
 CAT_COLORS = {
     "focus":  "#3b82f6",  # blue
     "admin":  "#22c55e",  # green
@@ -40,6 +39,28 @@ CAT_COLORS = {
     "collab": "#f59e0b",  # amber
     "off":    "#64748b",  # slate
 }
+
+# Try to load config.json and override defaults
+try:
+    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+        cfg = json.load(f)
+
+    # Replace category colors if present
+    if "category_colors" in cfg and isinstance(cfg["category_colors"], dict):
+        CAT_COLORS.update(cfg["category_colors"])
+
+    # Window size
+    if cfg.get("compact_window"):
+        WINDOW_W, WINDOW_H = 180, 80
+
+    # (Optional) you can grab notify_seconds_before, show_notifications, etc.
+    # and store them in variables here too
+except FileNotFoundError:
+    # no config.json, just stick with defaults
+    cfg = {}
+except Exception as e:
+    print(f"[config] failed to load config.json: {e}")
+    cfg = {}
 
 class StickyToast:
     """
