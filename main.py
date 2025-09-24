@@ -62,20 +62,20 @@ except Exception as e:
     print(f"[config] failed to load config.json: {e}")
     cfg = {}
 
-    # --- Normalize a few cfg values with safe fallbacks ---
-    _cfg_window = cfg.get("window") or {}
-    CFG_WIN_X = int(_cfg_window.get("x", 100))
-    CFG_WIN_Y = int(_cfg_window.get("y", 100))
-    CFG_COMPACT = bool(cfg.get("compact_window", False))
-    CFG_SHOW_NOTIFS = bool(cfg.get("show_notifications", True))
+# --- Normalize a few cfg values with safe fallbacks ---
+_cfg_window = cfg.get("window") or {}
+CFG_WIN_X = int(_cfg_window.get("x", 100))
+CFG_WIN_Y = int(_cfg_window.get("y", 100))
+CFG_COMPACT = bool(cfg.get("compact_window", False))
+CFG_SHOW_NOTIFS = bool(cfg.get("show_notifications", True))
 
-    # Accept ints or numeric strings for lead time; fallback to 0 on bad input
-    try:
-        CFG_NOTIFY_LEAD = int(cfg.get("notify_seconds_before", 0))
-        if CFG_NOTIFY_LEAD < 0:
-            CFG_NOTIFY_LEAD = 0
-    except Exception:
+# Accept ints or numeric strings for lead time; fallback to 0 on bad input
+try:
+    CFG_NOTIFY_LEAD = int(cfg.get("notify_seconds_before", 0))
+    if CFG_NOTIFY_LEAD < 0:
         CFG_NOTIFY_LEAD = 0
+except Exception:
+    CFG_NOTIFY_LEAD = 0
 
 class StickyToast:
     """
