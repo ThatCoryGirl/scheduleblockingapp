@@ -8,6 +8,7 @@ import time                  # Sleep in the file watcher loop
 from pathlib import Path     # Build paths relative to this file
 from datetime import datetime, timedelta  # Handle dates/times for scheduling
 from zoneinfo import ZoneInfo             # IANA timezone support (Python 3.9+)
+from Providers import Provider # Used for providers/init.py for later
 
 # --- Local timezone detection / override ---
 from tzlocal import get_localzone_name    # Detect the machine's IANA timezone name

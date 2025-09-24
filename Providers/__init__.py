@@ -1,5 +1,3 @@
-__init__.py
-
 # providers/__init__.py
 
 from .base import Provider
