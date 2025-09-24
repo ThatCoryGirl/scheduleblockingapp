@@ -365,6 +365,34 @@ class App:
             return start_t <= now_t < end_t
         # wraps midnight (e.g., 22:00 → 01:00)
         return now_t >= start_t or now_t < end_t
+    
+    # Task defined on main window app
+    def _current_and_next(self):
+        """
+        Return (current_block, next_block) relative to 'now'.
+        - current_block: the block whose [start,end) contains now, or None
+        - next_block: the next block by time today, or the first block tomorrow if none remain
+        """
+        now_t = datetime.now(self.tz).time()
+        cur = None
+        nxt = None
+
+        # Determine current block from today's parsed list
+        for b in self.blocks:
+        if self._time_in_range(b["start_time"], b["end_time"], now_t):
+            cur = b
+            break
+
+        # Find next-by-time (today); if none, wrap to first block tomorrow (i.e., index 0)
+        for b in self.blocks:
+            if b["start_time"] > now_t:
+                if nxt is None or b["start_time"] < nxt["start_time"]:
+                    nxt = b
+
+        if nxt is None and self.blocks:
+            nxt = self.blocks[0]  # wrap to tomorrow's first
+
+        return cur, nxt
 
     def _tick_ui(self):
         """
