@@ -397,21 +397,18 @@ class App:
     def _tick_ui(self):
         """
         Every second:
-        - Determine if the current time sits inside any block's [start, end).
-        - Update the active_color accordingly.
-        - Redraw the window.
+        - Compute current & next block
+        - Update active color
+        - Redraw
         """
-        now = datetime.now(self.tz).time()
-        for b in self.blocks:
-            if self._time_in_range(b["start_time"], b["end_time"], now):
-                self.active_color = b.get("color") or DEFAULT_COLOR
-                break
-        else:
-            # No active block -> default color
-            self.active_color = DEFAULT_COLOR
+        self._cur_block, self._next_block = self._current_and_next()
+
+        self.active_color = (
+            (self._cur_block.get("color") if self._cur_block else None)
+            or DEFAULT_COLOR
+        )
 
         self.draw_window()
-        # Schedule the next tick in ~1 second
         self.tk_root.after(1_000, self._tick_ui)
 
     def _on_canvas_resize(self, event):
