@@ -379,9 +379,9 @@ class App:
 
         # Determine current block from today's parsed list
         for b in self.blocks:
-        if self._time_in_range(b["start_time"], b["end_time"], now_t):
-            cur = b
-            break
+            if self._time_in_range(b["start_time"], b["end_time"], now_t):
+                cur = b
+                break
 
         # Find next-by-time (today); if none, wrap to first block tomorrow (i.e., index 0)
         for b in self.blocks:
