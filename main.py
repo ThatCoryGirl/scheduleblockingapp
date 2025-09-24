@@ -240,50 +240,70 @@ class App:
     def draw_window(self):
         """
         Redraw a compact 7-day week view inside the tile.
-        - A thin top bar uses self.active_color (so your current-block color still shows).
-        - 7 columns (Mon..Sun); today is outlined.
+        - Top accent bar shows active color.
+        - Header band shows Current task + Next task.
+        - 7 columns (Mon..Sun); today's column outlined.
         - Each day's blocks render as vertical bars by time range.
-        - In compact mode, omit labels; in full size, show tiny start labels.
+        - In non-compact mode, show tiny start labels + truncated titles.
         """
         self.canvas.delete("all")
 
-        # Determine the current window size (fallback to defaults when first shown)
+        # Window size
         try:
             w = max(120, self.tk_root.winfo_width())
             h = max(70,  self.tk_root.winfo_height())
         except Exception:
             w, h = WINDOW_W, WINDOW_H
-            legend_h = 18 if not self.config.compact_window else 16
 
-        # Background
-        self.canvas.create_rectangle(0, 0, w, h, fill="#e5e7eb", outline="")  # slate-200
-
-        # Top accent bar in the active color (preserves your current color logic)
+        # Background + accent
+        self.canvas.create_rectangle(0, 0, w, h, fill="#e5e7eb", outline="")
         self.canvas.create_rectangle(0, 0, w, 6, fill=self.active_color, outline="")
 
-        # Layout metrics
-        top_pad   = 10  # room under the accent bar
-        bottom_pad= 6
-        left_pad  = 6
-        right_pad = 6
-        col_gap   = 2
-        header_h  = 12  # day label row
-        grid_top  = top_pad + header_h
-        grid_bot  = h - bottom_pad
-        grid_h    = max(1, grid_bot - grid_top)
+        # Header band: current / next
+        hdr_h = 26 if not self.config.compact_window else 22
+        self.canvas.create_rectangle(0, 6, w, 6 + hdr_h, fill="#f1f5f9", outline="")
 
-        # Seven equal columns
+        cur_title = self._cur_block["title"] if getattr(self, "_cur_block", None) else "Off"
+        next_str = ""
+        if getattr(self, "_next_block", None):
+            nxt = self._next_block
+            next_str = f"Next: {nxt['title']} @ {nxt['start']}"
+
+        self.canvas.create_text(
+            8, 6 + hdr_h // 2 - 1,
+            text=cur_title, anchor="w",
+            font=("Segoe UI", 9, "bold"), fill="#0f172a"
+        )
+        if next_str:
+            self.canvas.create_text(
+                w - 8, 6 + hdr_h // 2 - 1,
+                text=next_str, anchor="e",
+                font=("Segoe UI", 8), fill="#334155"
+            )
+
+        # Layout metrics
+        top_pad    = 6 + hdr_h + 6
+        bottom_pad = 6
+        left_pad   = 6
+        right_pad  = 6
+        col_gap    = 2
+        header_h   = 14
+        grid_top   = top_pad + header_h
+        grid_bot   = h - bottom_pad
+        grid_h     = max(1, grid_bot - grid_top)
+
+        # Columns
         cols = 7
         total_gap = col_gap * (cols - 1)
         col_w = max(8, (w - left_pad - right_pad - total_gap) // cols)
 
-        # Monday-start week like your panel
+        # Week range (Mon start)
         today = datetime.now(self.tz).date()
-        start_of_week = today - timedelta(days=today.weekday())  # Monday
+        start_of_week = today - timedelta(days=today.weekday())
         days = [start_of_week + timedelta(days=i) for i in range(cols)]
         today_idx = (today - start_of_week).days
 
-        # Get blocks for the week (uses your existing logic)
+        # Blocks for week
         week_blocks = self._blocks_for_week(days)
 
         # Helpers
@@ -291,7 +311,6 @@ class App:
             return t.hour * 60 + t.minute + t.second / 60.0
 
         def y_for_time(t):
-            # Map 00:00..24:00 to grid_top..grid_bot
             m = minutes_since_midnight(t)
             return grid_top + (m / (24 * 60)) * grid_h
 
@@ -301,39 +320,49 @@ class App:
             x1 = x0 + col_w
 
             # Column background
-            self.canvas.create_rectangle(x0, grid_top, x1, grid_bot,
-                                        fill="#f8fafc", outline="#e2e8f0")  # very light bg
+            self.canvas.create_rectangle(
+                x0, grid_top, x1, grid_bot, fill="#f8fafc", outline="#e2e8f0"
+            )
 
-            # Day header (Mon, Tue, ...)
-            day_lbl = d.strftime("%a")  # Mon/Tue/...
-            self.canvas.create_text((x0 + x1) // 2, top_pad + header_h // 2,
-                                text=day_lbl, font=("Segoe UI", 8, "bold"),
-                                anchor="c", fill="#334155")
+            # Day header (Mon/Tue/...) + tiny count badge
+            day_lbl = d.strftime("%a")
+            self.canvas.create_text(
+                (x0 + x1) // 2, top_pad + header_h // 2,
+                text=day_lbl, font=("Segoe UI", 8, "bold"),
+                anchor="c", fill="#334155"
+            )
+            count = len(week_blocks[i])
+            if count > 0:
+                bx = x1 - 8
+                by = top_pad + 3
+                self.canvas.create_rectangle(bx - 10, by - 5, bx + 10, by + 7,
+                                            fill="#e2e8f0", outline="#cbd5e1")
+                self.canvas.create_text(bx, by + 1, text=str(count),
+                                        font=("Segoe UI", 7), fill="#0f172a")
 
-            # Render blocks as vertical bars
+            # Blocks
             for blk in week_blocks[i]:
                 y0 = y_for_time(blk["start_time"])
                 y1 = y_for_time(blk["end_time"])
-                # Minimum height for visibility
                 if y1 - y0 < 2:
                     y1 = y0 + 2
 
                 self.canvas.create_rectangle(x0 + 2, y0, x1 - 2, y1,
                                             fill=blk["color"], outline="")
 
-                # Only show tiny start labels when not compact (more room)
-                if not self.config.compact_window and (y1 - y0) >= 14:
-                    # Format start time as 12-hour AM/PM
-                    lbl = blk["start_time"].strftime("%I:%M %p").lstrip("0")
-                    self.canvas.create_text(x0 + 4, y0 + 2,
-                                        text=lbl,
-                                        font=("Segoe UI", 7),
-                                        anchor="nw", fill="#0f172a")
+                # Labels (non-compact + tall enough)
+                if not self.config.compact_window and (y1 - y0) >= 18:
+                    start_lbl = blk["start_time"].strftime("%I:%M %p").lstrip("0")
+                    title_lbl = blk["title"] if len(blk["title"]) <= 18 else blk["title"][:16] + "…"
+                    self.canvas.create_text(x0 + 4, y0 + 2, text=start_lbl,
+                                            font=("Segoe UI", 7), anchor="nw", fill="#0f172a")
+                    self.canvas.create_text(x0 + 4, y0 + 12, text=title_lbl,
+                                            font=("Segoe UI", 7), anchor="nw", fill="#0f172a")
 
             # Outline today's column
             if i == today_idx:
                 self.canvas.create_rectangle(x0, grid_top, x1, grid_bot,
-                                            outline="#0ea5e9", width=2)  # cyan-500
+                                            outline="#0ea5e9", width=2)
     
     def toggle_compact(self, _evt=None):
         """
