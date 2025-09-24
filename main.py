@@ -833,7 +833,14 @@ class App:
             except Exception as e:
                 print(f"[warn] Snooze scheduling failed: {e}")
 
-    StickyToast(self.tk_root, title, body, on_dismiss=on_dismiss, on_snooze=on_snooze)
+        # Assigning variable so that my object doesn't get "garbage-collected" prematurely
+        self._last_toast = StickyToast(
+            self.tk_root,
+            title,
+            body,
+            on_dismiss=on_dismiss,
+            on_snooze=on_snooze
+        )
 
     # ---------- Control ----------
     def force_reload(self, _=None):
